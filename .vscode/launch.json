@@ -8,11 +8,9 @@
 			"stopOnEntry": false,
 			"program": "${file}",
 			"env": {"PYDEVD_DISABLE_FILE_VALIDATION": "1"},
-			"args": ["-i", "C:/sampledata/kmall/drix_newfoundland", "-cpu", "1"]
+			"args": ["-i", "C:/sampledata/kmall/B_S2980_3005_20220220_084910.kmall"]
 		}
 	]
 }
-// "args": ["-i", "C:/sampledata"]
-//"-odir", "Z1_N5_P0.5",
 
 

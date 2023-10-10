@@ -27,3 +27,29 @@ class GGPING:
 	###############################################################################
 	def __str__(self):
 		return pprint.pformat(vars(self))
+
+###############################################################################
+class GGSECTOR:
+	'''used to hold the metadata associated with a SECTOR of data within a ping.'''
+	def __init__(self):
+		self.txSectorNumb			= 0
+		self.txArrNumber			= 0
+		self.txSubArray				= 0
+		self.padding0				= 0
+		self.sectorTransmitDelay_sec= 0
+		self.tiltAngleReTx_deg		= 0
+		self.txNominalSourceLevel_dB= 0
+		self.txFocusRange_m			= 0
+		self.centreFreq_Hz			= 0
+		self.signalBandWidth_Hz		= 0
+		self.totalSignalLength_sec	= 0
+		self.pulseShading			= 0
+		self.signalWaveForm			= 0
+		self.padding1				= 0
+		self.highVoltageLevel_dB	= 0
+		self.sectorTrackingCorr_dB	= 0
+		self.effectiveSignalLength_sec = 0
+
+	###############################################################################
+	def __str__(self):
+		return pprint.pformat(vars(self))
