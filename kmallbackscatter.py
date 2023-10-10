@@ -25,6 +25,7 @@ import geodetic
 import multiprocesshelper 
 import cloud2tif
 import ggmbesstandard
+import pdfdocument
 
 ###########################################################################
 def main():
@@ -58,7 +59,8 @@ def main():
         args.odir = os.path.join(args.inputfolder, str("GGOutlier_%s" % (time.strftime("%Y%m%d-%H%M%S"))))
     makedirs(args.odir)
 
-    logging.basicConfig(filename = os.path.join(args.odir,"kmallbackscatter_log.txt"), level=logging.INFO)
+    logfilename = os.path.join(args.odir,"kmallbackscatter_log.txt")
+    logging.basicConfig(filename = logfilename, level=logging.INFO)
     log("Configuration: %s" % (str(args)))
     log("Output Folder: %s" % (args.odir))
 
@@ -66,10 +68,11 @@ def main():
     for file in matches:
         kmallbackscatter(file, args)
 
+    pdfdocument.report(logfilename, args.odir)
+
 ############################################################
 def kmallbackscatter(filename, args):
-    '''we will try to auto backscatter beams by extracting the beam xyzF flag data and attempt to backscatter in scipy'''
-    '''we then set the beam flags to reject files we think are outliers and write the kmall file to a new file'''
+    '''we will try to auto calibrate backscatter beams by extracting the beam xyzF flag data'''
 
     #load the python proj projection object library if the user has requested it
     if args.epsg != "0":

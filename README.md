@@ -4,6 +4,8 @@
 # permit a user to specify a beam correction table
 # if using reciprocal lines we need to merge results together
 # save as a bscorr.txt file
+# make a pdf report
+# make a dictionary of reportable items
 
 # DONE
 # extract the runtime parameters so we can document if using FMMode, Frequency
