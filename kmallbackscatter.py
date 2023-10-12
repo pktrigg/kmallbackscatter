@@ -5,26 +5,27 @@
  
 import os.path
 from argparse import ArgumentParser
-from datetime import datetime, timedelta
+from datetime import datetime
 import math
 import numpy as np
-import open3d as o3d
+# import open3d as o3d
 import sys
 import time
-import glob
-import rasterio
+# import glob
+# import rasterio
 import multiprocessing as mp
-import shapefile
+# import shapefile
 import logging
 import matplotlib.pyplot as plt
+import itertools
 
 #local imports
 import kmall
 import fileutils
 import geodetic
-import multiprocesshelper 
-import cloud2tif
-import ggmbesstandard
+# import multiprocesshelper 
+# import cloud2tif
+# import ggmbesstandard
 import pdfdocument
 
 ###########################################################################
@@ -34,7 +35,7 @@ def main():
     parser.add_argument('-epsg',     action='store',         default="0",    dest='epsg',             help='Specify an output EPSG code for transforming from WGS84 to East,North,e.g. -epsg 4326')
     parser.add_argument('-i',         action='store',            default="",     dest='inputfolder',         help='Input filename/folder to process.')
     parser.add_argument('-odir',     action='store',         default="",    dest='odir',             help='Specify a relative output folder e.g. -odir GIS')
-    parser.add_argument('-debug',     action='store',         default="500",    dest='debug',             help='Specify the number of pings to process.  good only for debugging. [Default:-1]')
+    parser.add_argument('-debug',     action='store',         default="1000",    dest='debug',             help='Specify the number of pings to process.  good only for debugging. [Default:-1]')
 
     matches = []
     args = parser.parse_args()
@@ -56,19 +57,25 @@ def main():
 
     #make an output folder
     if len(args.odir) == 0:
-        args.odir = os.path.join(args.inputfolder, str("GGOutlier_%s" % (time.strftime("%Y%m%d-%H%M%S"))))
+        args.odir = os.path.join(args.inputfolder, str("KMALLBackscatter_%s" % (time.strftime("%Y%m%d-%H%M%S"))))
     makedirs(args.odir)
 
     logfilename = os.path.join(args.odir,"kmallbackscatter_log.txt")
     logging.basicConfig(filename = logfilename, level=logging.INFO)
     log("Configuration: %s" % (str(args)))
     log("Output Folder: %s" % (args.odir))
+    log("KMALLBackscatter Version: 3.01")
+    log("KMALLBackscatter started at: %s" % (datetime.now()))
+    log("Username: %s" %(os.getlogin()))
+    log("Computer: %s" %(os.environ['COMPUTERNAME']))
+    log("Number of CPUs %d" %(mp.cpu_count()))	
 
-    results = []
+    reports = []
     for file in matches:
-        kmallbackscatter(file, args)
-
-    pdfdocument.report(logfilename, args.odir)
+        report = kmallbackscatter(file, args)
+        reports.append(report)
+    
+    pdfdocument.report(logfilename, args.odir, reports=reports)
 
 ############################################################
 def kmallbackscatter(filename, args):
@@ -99,23 +106,37 @@ def kmallbackscatter(filename, args):
     outfile = os.path.join(args.odir, os.path.basename(filename) + "_avg.txt")
     np.savetxt(outfile, avg, fmt='%.5f', delimiter=',')
 
+    colors = itertools.cycle(["r", "g", "b", "y", "c", "m", "k"])
     for s in range(int(np.max(avg[:, 2]))+1):
         sector1 = avg[(avg[:,2] == s)]
         bs = np.mean(sector1[:, 1])
-        print ("Sector, Backscatter: %s, %s" % (s, bs))
+        log ("Sector, Backscatter: %s, %s" % (s, bs))
+        report["Sectornumber: %s" % (s)] = s
+        report["MeanBackscatterValue: %s" % (bs)] = bs
+        color=next(colors)
+        plt.scatter(sector1[:,0], sector1[:,1], color=color, s=4)
+        plt.plot(sector1[:, 0], sector1[:, 1], color=color, label="Sector"+ str(s) + " Backscatter Strength", linewidth=1)
+        plt.plot(sector1[:, 0], sector1[:, 3], color=color, label="Sector"+ str(s) + " Standard Deviation", linewidth=1)
 
     # plot the results in matplotl;ib so we can see the answers
-    plt.plot(avg[:, 0], avg[:, 1], label="Backscatter Strength")
-    plt.plot(avg[:, 0], avg[:, 3], label="Standard Deviation")
-    plt.legend(loc="upper left")
+
+
+    plt.legend(loc="upper left", fontsize="8",)
     plt.xlabel("Nadir Angle (degrees)")
     plt.ylabel("Backscatter Strength (dB)")
     plt.title("Backscatter Strength vs Nadir Angle\nDepth Mode: %s\n filename: %s" % (report["depthmode"], os.path.basename(report["filename"])), fontsize=10,)    
-    plt.show()
+    # plt.show()
     outfilename = os.path.join(os.path.dirname(filename), os.path.splitext(os.path.basename(filename))[0] + "_AngularDependence.png")
     plt.savefig(outfilename)
+    log("AVG File Saved to: %s" % (outfilename))
+    report ["ARC_filename"] = outfilename
+
+    # loop through dictionary and write out the report
+    for key in report.keys():
+        log("%s,%s\n" % (key, report[key]))
 
     log("backscattering complete at: %s" % (datetime.now()))
+    return report
 
 ###############################################################################
 def update_progress(job_title, progress):

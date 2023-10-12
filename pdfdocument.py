@@ -83,20 +83,62 @@ def bathyqcreportsummary(myreport, logfilename):
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-def reportsummary(myreport, GGOutlierlogfilename):
+def reportdetail(myreport, KMALLBackscatterlogfilename, thisreport):
 
-	if not os.path.exists(GGOutlierlogfilename):
+	#write out the per line stats...
+	reportfilename = KMALLBackscatterlogfilename + "_detail.txt"
+	f = open(reportfilename, 'w')
+	f.write("Item Value\n")
+	# loop through dictionary and write out the report
+	for key in thisreport.keys():
+		f.write("%s: %s\n" % (key, thisreport[key]))
+	f.close()
+
+	myreport.addspace()
+	myreport.addtitle("Input file Configuration Details")
+	myreport.addspace()
+	myreport.addtable(reportfilename)
+
+	image = thisreport["ARC_filename"]
+	if os.path.exists(image):
+		myreport.addimage(image, 450)
+
+	return
+
+####################################################################################################
+def report(KMALLBackscatterlogfilename, resultfolder, reports = []):
+	'''create an infinitpos QC report into PDF'''
+	if not os.path.exists(resultfolder):
+		return
+
+	outfilename = os.path.join(resultfolder, "KMALLBackscatterQCReport.pdf")
+	outfilename = fileutils.createOutputFileName(outfilename)
+	myreport = REPORT("KMALLBackscatter QCReport", outfilename)
+
+	#parse the KMALLBackscatter log file and make a summary table
+	if os.path.exists(KMALLBackscatterlogfilename):
+		reportsummary(myreport, KMALLBackscatterlogfilename )
+
+	for rep in reports:
+		reportdetail(myreport, KMALLBackscatterlogfilename, rep)
+	myreport.save()
+	myreport.viewpdf()
+
+####################################################################################################
+def reportsummary(myreport, KMALLBackscatterlogfilename):
+
+	if not os.path.exists(KMALLBackscatterlogfilename):
 		return
 
 	#process the log file
 	surveylines = []
-	GGOutlierduration = ""
+	KMALLBackscatterduration = ""
 	surveyline = None
 	status = []
 	metrics = []
-	metrics.append (["Inputs_Summary_Log", GGOutlierlogfilename])
+	metrics.append (["Inputs_Summary_Log", KMALLBackscatterlogfilename])
 
-	with open(GGOutlierlogfilename) as fp:
+	with open(KMALLBackscatterlogfilename) as fp:
 		for line in fp:
 			line = line.replace("  ", " ")
 			line = line.replace("  ", " ")
@@ -107,19 +149,11 @@ def reportsummary(myreport, GGOutlierlogfilename):
 
 			collectinformation(line, "INFO:root:Username:", "Username", metrics)
 			collectinformation(line, "INFO:root:Computer:", "Computer", metrics)
-			collectinformation(line, "INFO:root:GGOutlier Version:", "QC_Version", metrics)
-			collectinformation(line, "INFO:root:Writing outliers to:", "Outlier_Shape_Filename", metrics)
-			collectinformation(line, "INFO:root:Created LAZ file of outliers:", "Outlier_LAZ_Filename", metrics)
+			collectinformation(line, "INFO:root:KMALLBackscatter Version:", "QC_Version", metrics)
 			collectinformation(line, "INFO:root:Processing file:", "Input_Filename", metrics)
-			collectinformation(line, "INFO:root:QC Duration:", "GGOutlier_Duration", metrics)
-			collectinformation(line, "INFO:root:Depths loaded for quality control:", "Depths_Loaded_for_QC", metrics)
-			collectinformation(line, "INFO:root:Points tagged for further evaluation:", "Machine_Learning_Candidates", metrics)	
-			collectinformation(line, "INFO:root:Points outside specification:", "**Final_Outliers_Exceeding_Standard**", metrics)
-			collectinformation(line, "INFO:root:QC to Survey Standard:", "Required_Survey_Standard", metrics)
-			collectinformation(line, "INFO:root:Survey_Standard:", "Survey_Standard_Details", metrics)
-			collectinformation(line, "INFO:root:EPSGCode for geodetic conversions:", "EPSG_Code", metrics)
-			collectinformation(line, "INFO:root:Percentage outside specification:", "Percentage_Outside_Specification", metrics)
-			collectinformation(line, "INFO:root:Points checked:", "Points_Checked", metrics)
+			collectinformation(line, "INFO:root:QC Duration:", "KMALLBackscatter_Duration", metrics)
+
+			collectinformation(line, "INFO:root:AVG File Saved to:", "AVG_Plot", metrics)
 
 			msg = "INFO:root:Processing file:"
 			if msg in line:
@@ -144,7 +178,7 @@ def reportsummary(myreport, GGOutlierlogfilename):
 	totalpoints = 0
 
 	#write out the per line stats...
-	reportfilename = GGOutlierlogfilename + "_adjustment.txt"
+	reportfilename = KMALLBackscatterlogfilename + "_adjustment.txt"
 	f = open(reportfilename, 'w')
 	f.write("Item Value\n")
 	for rec in metrics:
@@ -152,178 +186,84 @@ def reportsummary(myreport, GGOutlierlogfilename):
 	f.close()
 
 	myreport.addspace()
-	myreport.addtitle("GGOutlier Summary of Results")
+	myreport.addtitle("KMALLBackscatter Calibration : Summary of Results")
 	myreport.addspace()
 	myreport.addtable(reportfilename)
 
-	myreport.addtitle("What is an Outlier?")
+	myreport.addtitle("What is Backscatter Calibration?")
 	myreport.addspace()
-	myreport.addparagraph("In bathymetry, an outlier typically refers to an isolated or anomalous depth measurement or feature on a seafloor depth map or chart. These outliers can be depths that are significantly different from the surrounding seafloor topography. Outliers might be caused by various factors such as errors in data collection, equipment malfunction, or unique geological features like wrecks, obstructions, seamounts or underwater volcanoes that stand out from the surrounding seabed. The scale of an outlier can be considerable. Identifying and understanding outliers in bathymetric data is important for accurate navigation, scientific research, and ocean exploration. Separating a real feature from noise is a complex issue. The final decision comes down to the skill and experience of the Surveyor In Charge. GGOutlier efficiently analyse and highlight outliers for validation.")
+	myreport.addparagraph("Multibeam sonar systems are used for mapping the seafloor and underwater terrain by emitting multiple acoustic beams in a fan-like pattern and recording the backscattered signals that bounce back from the seafloor and submerged objects. The backscatter data provides information about the characteristics of the seafloor or underwater features, including the intensity and texture of the backscattered signals.")
+	myreport.addparagraph("Here's what multibeam backscatter data can reveal:")
+	myreport.addparagraph("* Seafloor Texture: The intensity of the backscattered signals can indicate the texture of the seafloor. For example, fine sediments will often result in weaker backscatter, while rocky or hard seafloor will produce stronger backscatter.")
+	myreport.addparagraph("* Seafloor Features: Multibeam backscatter data can reveal the presence of seafloor features such as shipwrecks, boulders, coral reefs, or any other objects on the seabed.")
+	myreport.addparagraph("* Environmental Information: It can provide insights into the environmental conditions of the underwater area, including information about the substrate composition, seafloor habitats, and the distribution of marine life.")
+	myreport.addparagraph("* Geological Data: Geologists use multibeam backscatter data to study the geological characteristics of the seafloor, including fault lines, underwater volcanoes, and sedimentary deposits.")
+	myreport.addparagraph("* Mapping and Navigation: The data is also crucial for creating accurate bathymetric maps and aiding in navigation for various underwater activities, including scientific research, offshore construction, and marine resource management.")
+	myreport.addparagraph("Overall, multibeam backscatter data is a valuable tool for understanding and characterizing the seafloor and the underwater environment, making it essential for a wide range of applications in marine science, hydrography, and oceanography..")
 
-	myreport.addtitle("GGOutlier Principles")
+	myreport.addtitle("KMALLBackscatter Principles")
+	myreport.addspace()
+	myreport.addparagraph("KMALLBackscatter is a tool developed by Guardian Geomatics to extract the RAW backscatter from a KMALL file, analyse the data and produce information to permit the backscatter data to be calibrated for operations..")
+	myreport.addparagraph("Calibration means alignment rather than a scientific calibration against a known standard. this is in line with a patch test calibration which is also nothing more than alignment.")
+	myreport.addparagraph("KMALLBackscatter does NOT modify the input file in any way. It is a read-only process.")
 	myreport.addspace()
 
-	myreport.addparagraph("GGOutlier is a tool developed by Guardian Geomatics to Quality Control a multibeam bathymetry surface, and validate that surface against a standard such as those published by IHO SP44 or HIPP. The principle is similar in methodology to a traditional review by a surveyor-in-charge (SIC) process in which the SIC would review the depth surface by identifying outliers relative to its nearest neighours, determine if the outlier is significant and if so flag it for investigation.")
-	myreport.addparagraph("GGOutlier primary purpose is to positively, rigorously identify each and every depth which is considered an outlier relative to the required total vertical uncertainty at that depth. This provides the SIC and client with full confidence that the quality of the depth surface meets the required specification and any remaining outliers are known, have been investigated and are considered features rather than noise.")
-	myreport.addparagraph("GGOutlier does NOT modify the input file in any way. It is a read-only process.")
-	myreport.addspace()
 	myreport.addtitle("Definitions")
 	myreport.addspace()
-	myreport.addparagraph("'Depth Surface' is the primary input.  This is a floating point surface of fully processed depths, typically produced by a multibeam processing tool such as CARIS, QIMERA, PDS2000, MBSONAR.")
-	myreport.addparagraph("'Nearest Neighbours' is the immediate depths surrounding a central depth in all directions, think of a central pixel.  it wil have 8 neighbours surrounding it and 24 pixels if we include the second ring of neighvours. These nearest neighbours are used to find the outliers just as a human would do if manually checking a surface.")
-	myreport.addparagraph("'TVU Surface' is a Total Vertical Uncertainty surface created by the tool.  The TVU value is computed at each and every depth and represents the 'allowable tvu' at that depth.  Effectively, this means it is the threshold for quality control.")
-	myreport.addparagraph("'Inliers' are points which do meet the required specification for allowable total vertical uncertainty.")
-	myreport.addparagraph("'Outliers' are points which do NOT meet the required specification for allowable Total Vertical Uncertainty (TVU).")
+	myreport.addparagraph("'Backscatter' is the primary input. It is read from KMALL files MRZ datagram.  There are 2 backscatter values recorded on each and every beam of every ping..")
+	myreport.addparagraph("The first backscatter value is the 'RAW' backscatter. This is the backscatter value as recorded by the sonar. It is a relative value and is not calibrated in any way. It is a value between 0 and 255.")
+	myreport.addparagraph("The second backscatter value is the 'CALIBRATED' backscatter. This is the backscatter value after the sonar has applied a calibration curve to the RAW backscatter. It is a relative value and is not calibrated in any way. It is a value between 0 and 255.")
+	myreport.addparagraph("The 'RAW' backscatter is the value used by KMALLBackscatter to analyse the backscatter data.")
+	myreport.addparagraph("The 'CALIBRATED' backscatter is the value used by the sonar to display the backscatter data.")
+	myreport.addspace()
 
 	myreport.addtitle("Inputs")
 	myreport.addspace()
-	myreport.addparagraph("A depth surface (a floating point TIF file).")
-	myreport.addparagraph("A IHO SP44 specification such as 'order1a', 'specialorder'.")
+	myreport.addparagraph("One or more KMALL files.")
+	myreport.addparagraph("An existing BSCORR.TXT file if you have it.")
+	myreport.addspace()
+
 	myreport.addtitle("Outputs")
 	myreport.addspace()
-	myreport.addparagraph("A 'Regional Surface' TIF is created using median depths of the nearest neighbours to each depth.")
-	myreport.addparagraph("A 'TVU Surface' TIF is created. This is the allowable TVU for the depth of each and every pixel.")
-	myreport.addparagraph("A 'DeltaZ Surface TIF is created. This is the difference between the regional surface and the depth surface")
-	myreport.addparagraph("The DeltaZ values are then assessed against the TVU for that depth and either flagged as an outlier or accepted as within specification. The flagged depths are called 'outliers'.")
-	myreport.addparagraph("Outliers are saved to a point cloud file and an outlier shape file. The outlier shape file contains the processed depth, the Regional Depth, the AllowableTVU, the DeltaZ (difference between Regional Depth and processed depth) and a field for Review/Approval by SIC.")
-	myreport.addparagraph("GGOutlier will generate a QC report (this document) in order to enable rapid assessment of results.")
+	myreport.addparagraph("This PDF report.")
+	myreport.addparagraph("KMALLBackscatter will generate a QC report (this document) in order to enable rapid assessment of results.")
 	myreport.addspace()
-	myreport.addtitle("Role of Surveyor In Charge")
-	myreport.addparagraph("The SIC role is essential. The outlier shape file identifies all depths which do NOT meet the IHO specificaiton.  These are either outliers missed in processing or depths on stepp slopes which inherently will not meet TVU specification due to gridding resolution limitations. it is the role of the SIC to review these flagged outliers and confirm they are valid or need to be passed back to the data processors for additional cleaning.")
-	myreport.addparagraph("The SIC should edit the outlier shape file attribute field to document each outlier has been reveiwed and approved.")
+	
+	myreport.addtitle("What to do with this report")
 	myreport.addspace()
-	myreport.addtitle("Role of Data Processor")
-	myreport.addparagraph("The outlier shape file can be loaded into the processing software (ag CARIS, Qimera) and used to guide the data processor to revisit the ungridded raw data points and re-evaluate underlying data and edit if required.")
-	myreport.addparagraph("If additional edits are required, the DP shall regenerate the depth surface and rerun GGOutlier.")
-	myreport.addspace()
-	myreport.addtitle("Role of Client Representative")
-	myreport.addparagraph("The outlier shape file and Regional Depth will be delivered as part of a survey report. This can be used by the client to gain confidence all outliers have been reviewed by the SIC and there are no additional outliers in the depth surface.")
-	myreport.addspace()
-	myreport.addparagraph("Below is an example of how to consume the results from GGOutlier using GIS to analyse outliers which do not meet specification.")
-	myreport.addspace()
-	myreport.addspace()
+	myreport.addparagraph("The report will permit you to create a new BSCORR.TXT file which can then be uploaded into SIS.  SIS uses this file to improve the backscatter as computed at beam forming time which is why it needs to be applied BEFORE logging to new raw kmall files.")
+	myreport.addparagraph("The report will permit you to review each file, check the Angular Response Curve ARC has a sensible shape without spikes.")
+	myreport.addparagraph("The report will permit you to ensure the configuration of the sonar during acquisition has not changed.  Each kmall file should have a consistent set of parameters such as frequency, pulse length, gain, etc.")
 	myreport.addspace()
 	myreport.addparagraph("")
 	
-	image = os.path.join(os.path.dirname(__file__), "GGOutliergis.png")
-	myreport.addimage(image, 450)
-
-	plt.ioff()
-	# dtm_dataset = rio.open(regionalfilename)
-	dtm_dataset = rio.open(depthfilename)
-	NODATA = dtm_dataset.nodatavals[0]
-	downscale_factor = max(math.ceil(dtm_dataset.width / 2048),1)
-	dtm_data = dtm_dataset.read(1, out_shape=(
-            dtm_dataset.count,
-            int(dtm_dataset.height / downscale_factor),
-            int(dtm_dataset.width / downscale_factor)
-        ), resampling=Resampling.bilinear)
-	dtm_data[dtm_data > 10000] = 0
-	dtm_data[dtm_data <= -999] = 0
-
-	# fig, ax = plt.subplots(1, 1, figsize=(6,6))
-	# dtm_map = show(dtm_dataset,title='Digital Terrain Model',ax=ax);
-	# show(dtm_dataset,contour=True, ax=ax); #overlay the contours
-	# im = dtm_map.get_images()[0]
-	# fig.colorbar(im, label = 'Elevation (m)', ax=ax) # add a colorbar
-	# ax.ticklabel_format(useOffset=False, style='plain') # turn off scientific notation
-	
-	#Use hillshade function on the DTM data array
-	hs_data = cloud2tif.hillshade(dtm_data,315,10)
-
-	# fig, ax = plt.subplots(1, 1, figsize=(6,6))
-	ext = [dtm_dataset.bounds.left, dtm_dataset.bounds.right, dtm_dataset.bounds.bottom, dtm_dataset.bounds.top]
-	# plt.imshow(hs_data,extent=ext)
-	# plt.colorbar(); 
-	# plt.set_cmap('RdYlGn')
-	# plt.title('TEAK Hillshade')
-	# ax=plt.gca(); ax.ticklabel_format(useOffset=False, style='plain') #do not use scientific notation 
-	# rotatexlabels = plt.setp(ax.get_xticklabels(),rotation=90) #rotate x tick labels 90 degrees
-
-	#Overlay transparent hillshade on DTM:
-	SMALL_SIZE = 8
-	MEDIUM_SIZE = 10
-	BIGGER_SIZE = 12
-
-	plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-	plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-	plt.rc('axes', labelsize=SMALL_SIZE)    # fontsize of the x and y labels
-	# plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-	# plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-	# plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
-	plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-
-	plt.figure().set_figwidth(10)
-	plt.figure().set_figheight(20)
-	plt.rcParams['figure.figsize'] = [8, 8]
-	fig, ax = plt.subplots(1, 1)
-	ax = plt.gca()
-	ax.set_aspect('equal')
-	plt.gca().set_aspect('equal', adjustable='box')
-
-	# plt.rcParams.update({'font.size': 6})
-	# im1 = plt.plot(dtm_data,cmap='terrain'); 
-	im1 = plt.imshow(dtm_data,cmap='terrain',extent=ext); 
-	# cbar = plt.colorbar(); cbar.set_label('Elevation, m',rotation=270,labelpad=20)
-	im2 = plt.imshow(hs_data,cmap='Greys',alpha=0.8,extent=ext); 
-	# im2 = plt.plot(hs_data,cmap='Greys',alpha=0.5); 
-	# plt.colorbar()
-	# ax.ticklabel_format(useOffset=False, style='plain') #do not use scientific notation 
-	# rotatexlabels = plt.setp(ax.get_xticklabels(),rotation=90) #rotate x tick labels 90 degrees
-	# ax.set_aspect('equal', adjustable='box')
-	plt.axis('off')
-	# plt.grid('on'); 
-	# plt.colorbar();
-
-	f = open(outliertxtfilename, 'r')
-	Lines = f.readlines()
-	count = 0
-	points = []
-	# Strips the newline character
-	for line in Lines:
-		count += 1
-		point = line.strip().split(',')
-		points.append(point)
-		plt.plot(float(point[0]), float(point[1]), marker="x", markersize=2.5, markeredgewidth=0.25, markeredgecolor="red", markerfacecolor="green")
-
-	plt.grid()
-	# plt.show()
-	plt.title('Depth Surface With Outliers')
-	# plt.axis('on')
-	# plt.show()
-	# overviewimagefilename = regionalfilename + "_hillshade.png"
-	overviewimagefilename = depthfilename + "_hillshade.png"
-	plt.savefig(overviewimagefilename, bbox_inches='tight', dpi=640)
-	
+	# image = os.path.join(os.path.dirname(__file__), "KMALLBackscatterExample.png")
+	# myreport.addimage(image, 450)
 	myreport.addspace()
-	myreport.addspace()
-	myreport.addspace()
-	myreport.addspace()
-	myreport.addimage(overviewimagefilename, width=640)
-	myreport.addparagraph("The image above is a screenshot of the outliers relative to a hillshade of the input file. This provides a visual summary of the outliers. The outliers are plotted as red crosses.")
-	myreport.addparagraph("Outliers will most frequently be located at rocky outcrops so will be clustered. This is exactly as it should be. Stray, lonely outliers are the ones to closely analyse in GIS and CARIS to confirm if they are valid. Lonely outliers on flat terrain are items for concern.")
 	myreport.addparagraph("END OF REPORT.")
 
 	return
 
 ####################################################################################################
-def report(GGOutlierlogfilename, resultfolder):
+def report(KMALLBackscatterlogfilename, resultfolder, reports = []):
 	'''create an infinitpos QC report into PDF'''
 	if not os.path.exists(resultfolder):
 		return
 
-	outfilename = os.path.join(resultfolder, "GGOutlierQCReport.pdf")
+	outfilename = os.path.join(resultfolder, "KMALLBackscatterQCReport.pdf")
 	outfilename = fileutils.createOutputFileName(outfilename)
-	myreport = REPORT("GGOutlier QCReport", outfilename)
+	myreport = REPORT("KMALLBackscatter QCReport", outfilename)
 
-	#parse the GGOutlier log file and make a summary table
-	if os.path.exists(GGOutlierlogfilename):
-		reportsummary(myreport, GGOutlierlogfilename )
+	#parse the KMALLBackscatter log file and make a summary table
+	if os.path.exists(KMALLBackscatterlogfilename):
+		reportsummary(myreport, KMALLBackscatterlogfilename )
 
+	for rep in reports:
+		reportdetail(myreport, KMALLBackscatterlogfilename, rep)
 	myreport.save()
 	myreport.viewpdf()
 
-# ###################################################################################################
+####################################################################################################
 def addQCImage(myreport, f, fragment, notes):
 		if fragment in os.path.basename(f).lower():
 			requiredwidth = 512
@@ -348,7 +288,7 @@ def findcmap(folder, text):
 # ###################################################################################################
 def main():
 
-	parser = ArgumentParser(description='\n * generate a PDF report from GGOutlier Process one or many mission folders using GGOutlier.')
+	parser = ArgumentParser(description='\n * generate a PDF report from KMALLBackscatter Process one or many mission folders using KMALLBackscatter.')
 	parser.add_argument('-i', 			dest='inputfolder', action='store', 		default='.',			help='the root folder to find one more more mission folders. Pease refer to procedure for the mission folder layout - e.g. c:/mysurveyarea')
 	
 	args = parser.parse_args()
@@ -356,9 +296,9 @@ def main():
 	if args.inputfolder == '.':
 		args.inputfolder = os.getcwd()
 
-	resultfolder = os.path.join(args.inputfolder, "8_cor").replace('\\','/')
-	GGOutlierlogfilename = os.path.join(os.path.dirname(args.inputfolder), "GGOutlier.log").replace('\\','/')
-	GGOutlierreport(GGOutlierlogfilename, resultfolder)
+	# resultfolder = os.path.join(args.inputfolder, "8_cor").replace('\\','/')
+	# KMALLBackscatterlogfilename = os.path.join(os.path.dirname(args.inputfolder), "KMALLBackscatter.log").replace('\\','/')
+	# KMALLBackscatterreport(KMALLBackscatterlogfilename, resultfolder)
 
 	# outfilename = "c:/temp/myfile.pdf"
 	# outfilename = fileutils.createOutputFileName(outfilename)
@@ -489,7 +429,7 @@ class REPORT:
 		# return Image(path, width=iw, height=ih)
 		return Image(path, width=width, height=height)
 
-		# lowable <Image at 0x2baa2bbd390 frame=normal filename=GGOutliergis.png>(1918 x 1032) too large on page 3 in frame 'normal'(439.27559055118115 x 671.716535433071*) of template 'header'
+		# lowable <Image at 0x2baa2bbd390 frame=normal filename=KMALLBackscattergis.png>(1918 x 1032) too large on page 3 in frame 'normal'(439.27559055118115 x 671.716535433071*) of template 'header'
 
 ###################################################################################################
 	def compositeimage(self, filename, requiredwidth, legendfilename, legendwidth, outfilename):
@@ -979,7 +919,7 @@ class REPORT:
 # 	styleN = styles['Normal']
 # 	# styleH = styles['Heading1']
 
-# 	myreport = REPORT("GGOutlier QC Report %s" % (os.path.dirname(resultfolder)), outfilename)
+# 	myreport = REPORT("KMALLBackscatter QC Report %s" % (os.path.dirname(resultfolder)), outfilename)
 
 # 	myreport.addparagraph("hello")
 # 	myreport.addparagraph("hello2")
@@ -1043,7 +983,7 @@ class REPORT:
 if __name__ == "__main__":
 
 	main()
-	# resultfolder = "E:/projects/GGOutlier/A14/IP_Result_20200725013252/8_cor"
-	# GGOutlierlogfilename = "E:/projects/GGOutlier/A14/GGOutlier.log"
+	# resultfolder = "E:/projects/KMALLBackscatter/A14/IP_Result_20200725013252/8_cor"
+	# KMALLBackscatterlogfilename = "E:/projects/KMALLBackscatter/A14/KMALLBackscatter.log"
 
-	# GGOutlierreport(GGOutlierlogfilename, resultfolder)
+	# KMALLBackscatterreport(KMALLBackscatterlogfilename, resultfolder)

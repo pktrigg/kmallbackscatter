@@ -213,7 +213,15 @@ def loadbackscatterdata(filename, args):
             if datagram.depthmodename != currentdepthmode:
                 log("Depth Mode: %s" % (datagram.depthmodename))
                 currentdepthmode = datagram.depthmodename
+                report["frequency(Hz)"] = datagram.frequencyMode_Hz
                 report["depthmode"] = datagram.depthmodename
+                report["pingRate_Hz"] = datagram.pingRate_Hz
+                report["portMeanCov_deg"] =  datagram.portMeanCov_deg
+                report["portSectorEdge_deg"] =  datagram.portSectorEdge_deg
+                report["starbSectorEdge_deg"] =  datagram.starbSectorEdge_deg
+                report["swathsPerPing"] =  datagram.swathsPerPing
+                report["numTxSectors"] =  datagram.numTxSectors
+
                 report["bsCorrectionOffset_dB"] = datagram.bsCorrectionOffset_dB
                 for idx, s in enumerate(datagram.sectors):
                     report["Sector" + str(idx) + "sectorTrackingCorr_dB"] = s.sectorTrackingCorr_dB
@@ -250,7 +258,7 @@ def loadbackscatterdata(filename, args):
             # bs = np.mean(backscatter_vals)
             backscatter_vals = reject_outliers(backscatter_vals, m = 2.)
             bs = np.mean(backscatter_vals)
-            # bs = np.median(backscatter_vals)
+            bs = np.median(backscatter_vals)
             s = np.median(sector_vals)
             sd = np.std(backscatter_vals)
             anglebuckets.append([angle, bs, s, sd])
