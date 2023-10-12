@@ -216,7 +216,7 @@ def loadbackscatterdata(filename, args):
                 report["frequency(Hz)"] = datagram.frequencyMode_Hz
                 report["depthmode"] = datagram.depthmodename
                 report["pingRate_Hz"] = datagram.pingRate_Hz
-                report["portMeanCov_deg"] =  datagram.portMeanCov_deg
+                # report["portMeanCov_deg"] =  datagram.portMeanCov_deg
                 report["portSectorEdge_deg"] =  datagram.portSectorEdge_deg
                 report["starbSectorEdge_deg"] =  datagram.starbSectorEdge_deg
                 report["swathsPerPing"] =  datagram.swathsPerPing
@@ -229,8 +229,8 @@ def loadbackscatterdata(filename, args):
             npbeamangles = np.fromiter((beam.beamAngleReRx_deg for beam in datagram.beams), float, count=len(datagram.beams))
             npallbeamangles = np.concatenate((npallbeamangles, npbeamangles))
 
-            # npbackscatter = np.fromiter((beam.reflectivity1_dB for beam in datagram.beams), float, count=len(datagram.beams)) 
-            npbackscatter = np.fromiter((beam.reflectivity2_dB for beam in datagram.beams), float, count=len(datagram.beams)) 
+            npbackscatter = np.fromiter((beam.reflectivity1_dB for beam in datagram.beams), float, count=len(datagram.beams)) 
+            # npbackscatter = np.fromiter((beam.reflectivity2_dB for beam in datagram.beams), float, count=len(datagram.beams)) 
             npallbackscatters = np.concatenate((npallbackscatters, npbackscatter))
 
             npsector = np.fromiter((beam.txSectorNumb for beam in datagram.beams), float, count=len(datagram.beams)) 
@@ -275,7 +275,7 @@ def reject_outliers(data, m = 2.):
     return data[s<m]
 
 ###############################################################################
-def loaddata(filename, args):
+def loaddata(filename, args, intensity=False):
     '''load a point cloud and return the cloud'''
 
     start_time = time.time() # time the process
@@ -305,7 +305,7 @@ def loaddata(filename, args):
         typeofdatagram, datagram = r.readDatagram()
         if typeofdatagram == '#MRZ':
             datagram.read()
-            x, y, z, q, id, beamcounter = computebathypointcloud(datagram, geo, beamcounter=beamcounter)
+            x, y, z, q, id, beamcounter = computebathypointcloud(datagram, geo, beamcounter=beamcounter, intensity=intensity)
             # now make the list of 
             pointcloud.add(x, y, z, q, id)
             update_progress("Extracting Point Cloud", pingcounter/recordcount)
@@ -342,7 +342,7 @@ def computebackscatterpointcloud(datagram, geo, beamcounter):
     return (npeast, npnorth, npdepth, npq, npid, beamcounter)
 
 ###############################################################################
-def computebathypointcloud(datagram, geo, beamcounter):
+def computebathypointcloud(datagram, geo, beamcounter, intensity=False):
     '''using the MRZ datagram, efficiently compute a numpy array of the point clouds  '''
 
     for beam in datagram.beams:
@@ -354,7 +354,13 @@ def computebathypointcloud(datagram, geo, beamcounter):
 
     npeast = np.fromiter((beam.east for beam in datagram.beams), float, count=len(datagram.beams)) 
     npnorth = np.fromiter((beam.north for beam in datagram.beams), float, count=len(datagram.beams)) 
-    npdepth = np.fromiter((beam.depth for beam in datagram.beams), float, count=len(datagram.beams)) 
+    if intensity==False:
+        npdepth = np.fromiter((beam.depth for beam in datagram.beams), float, count=len(datagram.beams)) 
+    elif intensity==1:
+        npdepth = np.fromiter((beam.reflectivity1_dB for beam in datagram.beams), float, count=len(datagram.beams)) 
+    elif intensity==2:
+        npdepth = np.fromiter((beam.reflectivity2_dB for beam in datagram.beams), float, count=len(datagram.beams)) 
+    
     npq = np.fromiter((beam.rejectionInfo1 for beam in datagram.beams), float, count=len(datagram.beams)) 
     npid = np.fromiter((beam.id for beam in datagram.beams), float, count=len(datagram.beams)) 
 

@@ -67,18 +67,18 @@ def collectinformation(line, msgid, username, metrics):
 		metrics.append([username, line])
 	return line
 
-####################################################################################################
-def bathyqcreportsummary(myreport, logfilename):
+# ####################################################################################################
+# def bathyqcreportsummary(myreport, logfilename):
 
-	if not os.path.exists(logfilename):
-		return
+# 	if not os.path.exists(logfilename):
+# 		return
 
-	myreport.addtitle("BathyQC Principles")
-	myreport.addspace()
-	myreport.addspace()
+# 	myreport.addtitle("BathyQC Principles")
+# 	myreport.addspace()
+# 	myreport.addspace()
 
-	myreport.addparagraph("BathyQC is a tool developed by Guardian Geomatics to integrate many an unlimited quantity of of multibeam bathymetry survey lines, and generate a series of data products.  These products can be used to quality control in a consistent manner and when acceptable, deliver to the client.  The tool is rigorous and highly automated, producing consistent deliverable products.")
-	myreport.addspace()
+# 	myreport.addparagraph("BathyQC is a tool developed by Guardian Geomatics to integrate many an unlimited quantity of of multibeam bathymetry survey lines, and generate a series of data products.  These products can be used to quality control in a consistent manner and when acceptable, deliver to the client.  The tool is rigorous and highly automated, producing consistent deliverable products.")
+# 	myreport.addspace()
 
 ####################################################################################################
 ####################################################################################################
@@ -95,7 +95,7 @@ def reportdetail(myreport, KMALLBackscatterlogfilename, thisreport):
 	f.close()
 
 	myreport.addspace()
-	myreport.addtitle("Input file Configuration Details")
+	myreport.addtitle("Input File Configuration Details")
 	myreport.addspace()
 	myreport.addtable(reportfilename)
 
@@ -103,24 +103,55 @@ def reportdetail(myreport, KMALLBackscatterlogfilename, thisreport):
 	if os.path.exists(image):
 		myreport.addimage(image, 450)
 
+	image = thisreport["backscatter_raw_filename"]
+	if os.path.exists(image):
+		myreport.addimage(image, 450)
+	image = thisreport["backscatter_processed_filename"]
+	if os.path.exists(image):
+		myreport.addimage(image, 450)
+
+	myreport.story.append(PageBreak())
+
 	return
 
 ####################################################################################################
-def report(KMALLBackscatterlogfilename, resultfolder, reports = []):
+def reportrecommendation(myreport, KMALLBackscatterlogfilename, thisreport):
+
+	#write out the per line stats...
+	reportfilename = KMALLBackscatterlogfilename + "_recommendation.txt"
+	f = open(reportfilename, 'w')
+	for result in thisreport:
+		f.write(result + "\n")
+	f.close()
+
+	myreport.addspace()
+	myreport.addtitle("Report Recommendations")
+	myreport.addspace()
+	myreport.addtable(reportfilename)
+	# myreport.story.append(PageBreak())
+
+	return
+
+####################################################################################################
+def report(KMALLBackscatterlogfilename, resultfolder, reports = [], recommendations = []):
 	'''create an infinitpos QC report into PDF'''
 	if not os.path.exists(resultfolder):
 		return
 
 	outfilename = os.path.join(resultfolder, "KMALLBackscatterQCReport.pdf")
 	outfilename = fileutils.createOutputFileName(outfilename)
-	myreport = REPORT("KMALLBackscatter QCReport", outfilename)
+	myreport = REPORT("KMALL Backscatter Calibration Report", outfilename)
+
+	reportrecommendation(myreport, KMALLBackscatterlogfilename, recommendations)
 
 	#parse the KMALLBackscatter log file and make a summary table
 	if os.path.exists(KMALLBackscatterlogfilename):
 		reportsummary(myreport, KMALLBackscatterlogfilename )
 
+	
 	for rep in reports:
 		reportdetail(myreport, KMALLBackscatterlogfilename, rep)
+
 	myreport.save()
 	myreport.viewpdf()
 
@@ -235,33 +266,35 @@ def reportsummary(myreport, KMALLBackscatterlogfilename):
 	myreport.addparagraph("The report will permit you to review each file, check the Angular Response Curve ARC has a sensible shape without spikes.")
 	myreport.addparagraph("The report will permit you to ensure the configuration of the sonar during acquisition has not changed.  Each kmall file should have a consistent set of parameters such as frequency, pulse length, gain, etc.")
 	myreport.addspace()
-	myreport.addparagraph("")
+
+	myreport.story.append(PageBreak())
+	# myreport.addparagraph("")
 	
 	# image = os.path.join(os.path.dirname(__file__), "KMALLBackscatterExample.png")
 	# myreport.addimage(image, 450)
-	myreport.addspace()
-	myreport.addparagraph("END OF REPORT.")
+	# myreport.addspace()
+	# myreport.addparagraph("END OF REPORT.")
 
 	return
 
 ####################################################################################################
-def report(KMALLBackscatterlogfilename, resultfolder, reports = []):
-	'''create an infinitpos QC report into PDF'''
-	if not os.path.exists(resultfolder):
-		return
+# def report(KMALLBackscatterlogfilename, resultfolder, reports = []):
+# 	'''create an infinitpos QC report into PDF'''
+# 	if not os.path.exists(resultfolder):
+# 		return
 
-	outfilename = os.path.join(resultfolder, "KMALLBackscatterQCReport.pdf")
-	outfilename = fileutils.createOutputFileName(outfilename)
-	myreport = REPORT("KMALLBackscatter QCReport", outfilename)
+# 	outfilename = os.path.join(resultfolder, "KMALLBackscatterQCReport.pdf")
+# 	outfilename = fileutils.createOutputFileName(outfilename)
+# 	myreport = REPORT("KMALLBackscatter QCReport", outfilename)
 
-	#parse the KMALLBackscatter log file and make a summary table
-	if os.path.exists(KMALLBackscatterlogfilename):
-		reportsummary(myreport, KMALLBackscatterlogfilename )
+# 	#parse the KMALLBackscatter log file and make a summary table
+# 	if os.path.exists(KMALLBackscatterlogfilename):
+# 		reportsummary(myreport, KMALLBackscatterlogfilename )
 
-	for rep in reports:
-		reportdetail(myreport, KMALLBackscatterlogfilename, rep)
-	myreport.save()
-	myreport.viewpdf()
+# 	for rep in reports:
+# 		reportdetail(myreport, KMALLBackscatterlogfilename, rep)
+# 	myreport.save()
+# 	myreport.viewpdf()
 
 ####################################################################################################
 def addQCImage(myreport, f, fragment, notes):
@@ -610,9 +643,13 @@ class REPORT:
 				line = line.replace("  ", " ")
 				line = line.replace("  ", " ")
 				words = line.split(" ")
-				data.append([Paragraph(words[0], style), Paragraph(words[1], style)])
-
-		t=Table(data, rowHeights=None, style=None, splitByRow=1, repeatRows=0, repeatCols=0, rowSplitRange=None, spaceBefore=None, spaceAfter=None, colWidths=[5 * cm, 10 * cm])
+				# data.append([Paragraph(words[0], style), Paragraph(words[1], style)])
+				row=[]
+				for word in words:
+					row.append([Paragraph(word, style)])
+				data.append(row)
+		t=Table(data, rowHeights=None, style=None, splitByRow=1, repeatRows=0, repeatCols=0, rowSplitRange=None, spaceBefore=None, spaceAfter=None)
+		# t=Table(data, rowHeights=None, style=None, splitByRow=1, repeatRows=0, repeatCols=0, rowSplitRange=None, spaceBefore=None, spaceAfter=None, colWidths=[5 * cm, 10 * cm])
 		t.setStyle(TableStyle([('FONTNAME',(0,0),(-1,0), "Helvetica-Bold")]))
 		t.setStyle(TableStyle([('FONTSIZE',(0,0),(-1,-1), 6)]))
 		t.setStyle(TableStyle([('LEFTPADDING',(0,0),(-1,-1), 2)]))

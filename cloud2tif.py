@@ -17,6 +17,7 @@ from rasterio import windows
 
 from scipy.signal import medfilt
 from scipy.signal import medfilt2d
+import matplotlib.pyplot as plt
 
 import fileutils
 
@@ -193,65 +194,66 @@ def saveastif(outfilename, geo, pcd, resolution=1, fill=False):
 def pcd2meantif(outfilename, geo, pcd, resolution=1, fill=False):
     # Current (inefficient) code to quantize into XY 'bins' and take mean Z values in each bin
 
-	if len(pcd)==0:	
-		return
-		
-	pcd[:, 0:2] = np.round(pcd[:, 0:2]/float(resolution))*float(resolution) # Round XY values to nearest resolution value
+    if len(pcd)==0:	
+        return
+        
+    pcd[:, 0:2] = np.round(pcd[:, 0:2]/float(resolution))*float(resolution) # Round XY values to nearest resolution value
 
-	NODATA = -999
-	xmin = pcd.min(axis=0)[0]
-	ymin = pcd.min(axis=0)[1]
-	
-	xmax = pcd.max(axis=0)[0]
-	ymax = pcd.max(axis=0)[1]
+    NODATA = -999
+    xmin = pcd.min(axis=0)[0]
+    ymin = pcd.min(axis=0)[1]
+    
+    xmax = pcd.max(axis=0)[0]
+    ymax = pcd.max(axis=0)[1]
 
-	xres 	= resolution
-	yres 	= resolution
-	width 	= math.ceil((xmax - xmin) / resolution)
-	height 	= math.ceil((ymax - ymin) / resolution)
-	mean_height = np.zeros((height, width))
+    xres 	= resolution
+    yres 	= resolution
+    width 	= math.ceil((xmax - xmin) / resolution)
+    height 	= math.ceil((ymax - ymin) / resolution)
+    mean_height = np.zeros((height, width))
 
-	# Loop over each x-y bin and calculate mean z value 
-	x_val = xmin
-	for x in range(width):
-		y_val = ymax
-		for y in range(height):
-			height_vals = pcd[(pcd[:,0] == float(x_val)) & (pcd[:,1] == float(y_val)), 2]
-			if height_vals.size != 0:
-				mean_height[y,x] = np.mean(height_vals)
-			y_val -= resolution
-		x_val += resolution
+    # Loop over each x-y bin and calculate mean z value 
+    x_val = xmin
+    for x in range(width):
+        y_val = ymax
+        for y in range(height):
+            height_vals = pcd[(pcd[:,0] == float(x_val)) & (pcd[:,1] == float(y_val)), 2]
+            if height_vals.size != 0:
+                mean_height[y,x] = np.mean(height_vals)
+            y_val -= resolution
+        x_val += resolution
 
-	# return mean_height
-	arr = mean_height
-	arr[mean_height == 0] = NODATA
-	
-	log("Creating tif file... %s" % (outfilename))
-	transform = from_origin(xmin-(xres/2), ymax + (yres/2), xres, yres)
+    # return mean_height
+    arr = mean_height
+    arr[mean_height == 0] = NODATA
+    
+    log("Creating tif file... %s" % (outfilename))
+    transform = from_origin(xmin-(xres/2), ymax + (yres/2), xres, yres)
 
-	# save to file...
-	src= rasterio.open(
-			outfilename,
-			mode="w",
-			driver="GTiff",
-			height=height,
-			width=width,
-			count=1,
-			dtype='float32',
-			crs=geo.projection.srs,
-			transform=transform,
-			nodata=NODATA,
-	) 
-	#we might want to fill in the gaps. useful sometimes...
-	if fill:
-		from rasterio.fill import fillnodata
-		arr = fillnodata(arr, mask=None, max_search_distance=xres*2, smoothing_iterations=0)
+    # save to file...
+    src= rasterio.open(
+            outfilename,
+            mode="w",
+            driver="GTiff",
+            height=height,
+            width=width,
+            count=1,
+            dtype='float32',
+            crs=geo.projection.srs,
+            transform=transform,
+            nodata=NODATA,
+    ) 
+    #we might want to fill in the gaps. useful sometimes...
+    if fill:
+        from rasterio.fill import fillnodata
+        arr = fillnodata(arr, mask=None, max_search_distance=xres*2, smoothing_iterations=0)
 
-	src.write(arr, 1)
-	src.close()
-	log("Creating tif file Complete.")
+    src.write(arr, 1)
+    src.close()
+    log("Creating tif file Complete.")
 
-	return outfilename
+    return outfilename
+
 
 ###############################################################################
 def point2raster(outfilename, geo, pcd, resolution=1, bintype="mean", fill=False):

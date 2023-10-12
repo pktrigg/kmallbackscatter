@@ -4,10 +4,14 @@
 # permit a user to specify a beam correction table
 # if using reciprocal lines we need to merge results together
 # save as a bscorr.txt file
-# make a pdf report
-# make a dictionary of reportable items
+# add section to report 'recommended corrections to be applied to bscorr file'
 
 # DONE
+# add support for multiple input files.
+# report now creates backscatter geotif file of raw reflectivity so we can 'see the data'
+# report now creates backscatter geotif file of processed reflectivity so we can 'see the data'
+# make a pdf report
+# make a dictionary of reportable items
 # extract the runtime parameters so we can document if using FMMode, Frequency
 # extract the backscatter into a numpy array
 # basic reading of a kmall file
