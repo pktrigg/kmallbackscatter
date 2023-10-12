@@ -199,7 +199,8 @@ def loadbackscatterdata(filename, args):
 
     npallbeamangles = np.empty([0], dtype=float)
     npallsectors = np.empty([0], dtype=float)
-    npallbackscatters = np.empty([0], dtype=float)
+    npallrawbackscatters = np.empty([0], dtype=float)
+    npallprocessedbackscatters = np.empty([0], dtype=float)
 
     # demonstrate how to load the navigation records into a list.  this is really handy if we want to make a trackplot for coverage
     while r.moreData():
@@ -229,9 +230,11 @@ def loadbackscatterdata(filename, args):
             npbeamangles = np.fromiter((beam.beamAngleReRx_deg for beam in datagram.beams), float, count=len(datagram.beams))
             npallbeamangles = np.concatenate((npallbeamangles, npbeamangles))
 
-            npbackscatter = np.fromiter((beam.reflectivity1_dB for beam in datagram.beams), float, count=len(datagram.beams)) 
-            # npbackscatter = np.fromiter((beam.reflectivity2_dB for beam in datagram.beams), float, count=len(datagram.beams)) 
-            npallbackscatters = np.concatenate((npallbackscatters, npbackscatter))
+            npprocessedbackscatter = np.fromiter((beam.reflectivity1_dB for beam in datagram.beams), float, count=len(datagram.beams)) 
+            npallprocessedbackscatters = np.concatenate((npallprocessedbackscatters, npprocessedbackscatter))
+            
+            nprawbackscatter = np.fromiter((beam.reflectivity2_dB for beam in datagram.beams), float, count=len(datagram.beams)) 
+            npallrawbackscatters = np.concatenate((npallrawbackscatters, nprawbackscatter))
 
             npsector = np.fromiter((beam.txSectorNumb for beam in datagram.beams), float, count=len(datagram.beams)) 
             npallsectors = np.concatenate((npallsectors, npsector))
@@ -250,9 +253,9 @@ def loadbackscatterdata(filename, args):
     npallbeamangles = np.round(npallbeamangles / float(resolution))*float(resolution) # Round angle to nearest resolution value
     anglemin = npallbeamangles.min(axis=0)
     anglemax = npallbeamangles.max(axis=0)
-    anglebuckets = []
+    processedanglebuckets = []
     for angle in range(int(anglemin), int(anglemax)):
-        backscatter_vals = npallbackscatters[(npallbeamangles == int(angle))]
+        backscatter_vals = npallprocessedbackscatters[(npallbeamangles == int(angle))]
         sector_vals = npallsectors[(npallbeamangles == int(angle))]
         if backscatter_vals.size != 0:
             # bs = np.mean(backscatter_vals)
@@ -261,11 +264,23 @@ def loadbackscatterdata(filename, args):
             bs = np.median(backscatter_vals)
             s = np.median(sector_vals)
             sd = np.std(backscatter_vals)
-            anglebuckets.append([angle, bs, s, sd])
+            processedanglebuckets.append([angle, bs, s, sd])
+    rawanglebuckets = []
+    for angle in range(int(anglemin), int(anglemax)):
+        backscatter_vals = npallrawbackscatters[(npallbeamangles == int(angle))]
+        sector_vals = npallsectors[(npallbeamangles == int(angle))]
+        if backscatter_vals.size != 0:
+            # bs = np.mean(backscatter_vals)
+            backscatter_vals = reject_outliers(backscatter_vals, m = 2.)
+            bs = np.mean(backscatter_vals)
+            bs = np.median(backscatter_vals)
+            s = np.median(sector_vals)
+            sd = np.std(backscatter_vals)
+            rawanglebuckets.append([angle, bs, s, sd])
     r.close()
     log("Load Duration: %.3f seconds" % (time.time() - start_time))
 
-    return anglebuckets, report
+    return processedanglebuckets, rawanglebuckets, report
 
 ###############################################################################
 def reject_outliers(data, m = 2.):

@@ -151,6 +151,7 @@ def plotbackscatter(filename, args, geo, intensity=1):
     overviewimagefilename = outfilename + "_reflectivity.png"
     plt.savefig(overviewimagefilename, bbox_inches='tight', dpi=640)
     plt.close()
+
     return overviewimagefilename
 
 ############################################################
@@ -172,36 +173,43 @@ def kmallbackscatter(filename, args):
 
     pingcounter = 0
     beamcountarray = 0
+    results = []
     
     log("Reading runtime parameters...")
     runtime = kmall.getruntime(filename)
 
     log("Loading Backscatter...")
-    anglebuckets, report = kmall.loadbackscatterdata(filename, args)
-    avg = np.array(anglebuckets)
+    processedanglebuckets, rawanglebuckets, report = kmall.loadbackscatterdata(filename, args)
+    processedavg = np.array(processedanglebuckets)
+    for s in range(int(np.max(processedavg[:, 2]))+1):
+        sectorRaw = processedavg[(processedavg[:,2] == s)]
+        bs = np.mean(sectorRaw[:, 1])
+        results.append([s,bs])
+        log ("Sector, Backscatter: %s, %s" % (s, bs))
+        report["Sectornumber:%s" % (s)] = s
+        report["MeanBackscatterValue:%s" % (bs)] = bs
+
+
+    # now plot the raw avg to a nice graph
+    rawavg = np.array(rawanglebuckets)
     outfile = os.path.join(args.odir, os.path.basename(filename) + "_avg.txt")
-    np.savetxt(outfile, avg, fmt='%.5f', delimiter=',')
+    np.savetxt(outfile, rawavg, fmt='%.5f', delimiter=',')
 
     plt.figure().set_figwidth(10)
     plt.figure().set_figheight(10)
     plt.rcParams['figure.figsize'] = [8, 8]
 
-    results = []
     colors = itertools.cycle(["r", "g", "b", "y", "c", "m", "k"])
-    for s in range(int(np.max(avg[:, 2]))+1):
-        sector1 = avg[(avg[:,2] == s)]
-        bs = np.mean(sector1[:, 1])
-        results.append([s,bs])
-        log ("Sector, Backscatter: %s, %s" % (s, bs))
-        # report["Sectornumber"] = s
-        report["Sectornumber:%s" % (s)] = s
-        # report["Sectornumber: %s" % (s)] = s
-        # report["MeanBackscatterValue"] = bs
-        report["MeanBackscatterValue:%s" % (bs)] = bs
+    for s in range(int(np.max(rawavg[:, 2]))+1):
+        sectorRaw = rawavg[(rawavg[:,2] == s)]
+        sectorProcessed = processedavg[(rawavg[:,2] == s)]
+        bs = np.mean(sectorRaw[:, 1])
+        # results.append([s,bs])
         color=next(colors)
-        plt.scatter(sector1[:,0], sector1[:,1], color=color, s=4)
-        plt.plot(sector1[:, 0], sector1[:, 1], color=color, label="Sector"+ str(s) + " Backscatter Strength", linewidth=1)
-        # plt.plot(sector1[:, 0], sector1[:, 3], color=color, label="Sector"+ str(s) + " Standard Deviation", linewidth=1)
+        plt.scatter(sectorRaw[:,0], sectorRaw[:,1], color=color, s=4)
+        plt.plot(sectorRaw[:, 0], sectorRaw[:, 1], color=color, label="Sector"+ str(s) + " RawBackscatter Strength", linewidth=1)
+        plt.plot(sectorProcessed[:, 0], sectorRaw[:, 1], color=color, label="Sector"+ str(s) + " Processed Backscatter Strength", linewidth=1)
+        plt.plot(sectorRaw[:, 0], sectorRaw[:, 3], color=color, label="Sector"+ str(s) + " Raw Standard Deviation", linewidth=1)
 
     # report["MeanBSValues"] = results
     # plot the results in matplotl;ib so we can see the answers
