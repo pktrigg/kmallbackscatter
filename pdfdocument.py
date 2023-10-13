@@ -217,11 +217,11 @@ def reportsummary(myreport, KMALLBackscatterlogfilename):
 	f.close()
 
 	myreport.addspace()
-	myreport.addtitle("KMALLBackscatter Calibration : Summary of Results")
+	myreport.addtitle("KMALLBackscatter Calibration : Summary of Inputs")
 	myreport.addspace()
 	myreport.addtable(reportfilename)
 
-	myreport.addtitle("What is Backscatter Calibration?")
+	myreport.addtitle("What is a Backscatter Calibration?")
 	myreport.addspace()
 	myreport.addparagraph("Multibeam sonar systems are used for mapping the seafloor and underwater terrain by emitting multiple acoustic beams in a fan-like pattern and recording the backscattered signals that bounce back from the seafloor and submerged objects. The backscatter data provides information about the characteristics of the seafloor or underwater features, including the intensity and texture of the backscattered signals.")
 	myreport.addparagraph("Here's what multibeam backscatter data can reveal:")
@@ -230,29 +230,36 @@ def reportsummary(myreport, KMALLBackscatterlogfilename):
 	myreport.addparagraph("* Environmental Information: It can provide insights into the environmental conditions of the underwater area, including information about the substrate composition, seafloor habitats, and the distribution of marine life.")
 	myreport.addparagraph("* Geological Data: Geologists use multibeam backscatter data to study the geological characteristics of the seafloor, including fault lines, underwater volcanoes, and sedimentary deposits.")
 	myreport.addparagraph("* Mapping and Navigation: The data is also crucial for creating accurate bathymetric maps and aiding in navigation for various underwater activities, including scientific research, offshore construction, and marine resource management.")
-	myreport.addparagraph("Overall, multibeam backscatter data is a valuable tool for understanding and characterizing the seafloor and the underwater environment, making it essential for a wide range of applications in marine science, hydrography, and oceanography..")
+	myreport.addparagraph("Overall, multibeam backscatter data is a valuable tool for understanding and characterizing the seafloor and the underwater environment, making it essential for a wide range of applications in marine science, hydrography, and oceanography.")
 
 	myreport.addtitle("KMALLBackscatter Principles")
 	myreport.addspace()
-	myreport.addparagraph("KMALLBackscatter is a tool developed by Guardian Geomatics to extract the RAW backscatter from a KMALL file, analyse the data and produce information to permit the backscatter data to be calibrated for operations..")
+	myreport.addparagraph("KMALLBackscatter is a tool developed by Guardian Geomatics to extract the RAW backscatter from a KMALL file, analyse the data and produce information to permit the backscatter data to be calibrated in order that the quality and consistency of data are improved.")
 	myreport.addparagraph("Calibration means alignment rather than a scientific calibration against a known standard. this is in line with a patch test calibration which is also nothing more than alignment.")
 	myreport.addparagraph("KMALLBackscatter does NOT modify the input file in any way. It is a read-only process.")
 	myreport.addspace()
 
 	myreport.addtitle("Definitions")
 	myreport.addspace()
-	myreport.addparagraph("'Backscatter' is the primary input. It is read from KMALL files MRZ datagram.  There are 2 backscatter values recorded on each and every beam of every ping..")
-	myreport.addparagraph("The first backscatter value is the 'RAW' backscatter. This is the backscatter value as recorded by the sonar. It is a relative value and is not calibrated in any way. It is a value between 0 and 255.")
-	myreport.addparagraph("The second backscatter value is the 'CALIBRATED' backscatter. This is the backscatter value after the sonar has applied a calibration curve to the RAW backscatter. It is a relative value and is not calibrated in any way. It is a value between 0 and 255.")
-	myreport.addparagraph("The 'RAW' backscatter is the value used by KMALLBackscatter to analyse the backscatter data.")
-	myreport.addparagraph("The 'CALIBRATED' backscatter is the value used by the sonar to display the backscatter data.")
+	myreport.addparagraph("'Backscatter' is the primary input. It is read from KMALL files MRZ datagram.  There are 2 backscatter values recorded on each and every beam of every ping.")
+	myreport.addparagraph("The first backscatter value (reflectivity1_dB) is the 'CALIBRATED' backscatter. This is the backscatter value as processed by Kongsberg 'Special TVG' in real time. This is the RAW backscatter value AFTER the sonar has applied a calibration curve to the RAW backscatter. It is a floating point value.")
+	myreport.addparagraph("The second backscatter value (reflectivity2_dB) is the 'RAW' backscatter.  It is a relative value and is not calibrated in any way. It is a floating point value.")
 	myreport.addspace()
 
 	myreport.addtitle("Inputs")
 	myreport.addspace()
 	myreport.addparagraph("One or more KMALL files.")
-	myreport.addparagraph("An existing BSCORR.TXT file if you have it.")
+	myreport.addparagraph("Each kmall file should have a consistent set of parameters such as frequency, pulse length, gain, etc. to ensure the data is consistent.")
+	myreport.addparagraph("If the data is not consistent then the results will be meaningless.")
+	myreport.addparagraph("Reciprocal lines should be run on a flat featurelesss seafloor for each depth mode.")
+	myreport.addparagraph("Reciprocal lines should be run on a flat featurelesss seafloor for each depth mode.  The lines should be about 2000 pings in duration. the water depth should be suitable for the depth mode being calibrated. The single/dual swath configuration should not be changed mid-calibration as single / dual swath acquire quite different backscatter data.")
+
+
+	myreport.addparagraph("An existing BSCORR.TXT file if you have it. The bscorr file is used in realtime by the sonar to adjust each sector and end each depth mode. the results of this calibration will be a NEW bscorr.txt file which needs to be uploaded to SIS. ")
+	myreport.addparagraph("A 'target' intensity level for the test area.  This will normally be provided by the client if they wish to calibrtated the backscatter against a previous surface. If not provided the global mean for the input files is computed for you.")
+	myreport.addparagraph("The reflectivity1_dB field (processed backscatter) has been confirmed by CARIS and QPS as the dataset used for backscatter processing.  This is the dataset the tool uses for teh calibration.")
 	myreport.addspace()
+
 
 	myreport.addtitle("Outputs")
 	myreport.addspace()
@@ -264,7 +271,6 @@ def reportsummary(myreport, KMALLBackscatterlogfilename):
 	myreport.addspace()
 	myreport.addparagraph("The report will permit you to create a new BSCORR.TXT file which can then be uploaded into SIS.  SIS uses this file to improve the backscatter as computed at beam forming time which is why it needs to be applied BEFORE logging to new raw kmall files.")
 	myreport.addparagraph("The report will permit you to review each file, check the Angular Response Curve ARC has a sensible shape without spikes.")
-	myreport.addparagraph("The report will permit you to ensure the configuration of the sonar during acquisition has not changed.  Each kmall file should have a consistent set of parameters such as frequency, pulse length, gain, etc.")
 	myreport.addspace()
 
 	myreport.story.append(PageBreak())

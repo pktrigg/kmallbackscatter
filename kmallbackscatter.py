@@ -208,7 +208,7 @@ def kmallbackscatter(filename, args):
         color=next(colors)
         plt.scatter(sectorRaw[:,0], sectorRaw[:,1], color=color, s=4)
         plt.plot(sectorRaw[:, 0], sectorRaw[:, 1], color=color, label="Sector"+ str(s) + " RawBackscatter Strength", linewidth=1)
-        plt.plot(sectorProcessed[:, 0], sectorRaw[:, 1], color=color, label="Sector"+ str(s) + " Processed Backscatter Strength", linewidth=1)
+        plt.plot(sectorProcessed[:, 0], sectorProcessed[:, 1], color=color, label="Sector"+ str(s) + " Processed Backscatter Strength", linewidth=1)
         plt.plot(sectorRaw[:, 0], sectorRaw[:, 3], color=color, label="Sector"+ str(s) + " Raw Standard Deviation", linewidth=1)
 
     # report["MeanBSValues"] = results
