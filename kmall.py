@@ -163,6 +163,14 @@ def getsuitableepsg(filename):
     return epsg
 
 ###############################################################################
+def getinstallation(filename):
+    '''read the installation record and return a dictionary'''
+    r = kmallreader(filename)
+    installation = r.getinstallation()
+    r.close()
+    return installation
+
+###############################################################################
 def getruntime(filename):
     '''read the runtime record and return a dictionary'''
     r = kmallreader(filename)
@@ -746,6 +754,21 @@ class kmallreader:
             # self.fileptr.seek(numberofbytes, 1)
 
 ###############################################################################
+    def getinstallation(self):
+        '''read the installation record and get the depth mode'''
+        longitude = 0
+        latitude = 0
+        fmmode = False
+        self.rewind()
+        while self.moreData():
+            typeofdatagram, datagram = self.readDatagram()
+            if typeofdatagram == '#IIP':
+                datagram.read()
+                self.rewind()
+                return datagram.installationparameters
+
+
+###############################################################################
     def getruntime(self):
         '''read the runtime record and get the depth mode'''
         longitude = 0
@@ -1285,7 +1308,16 @@ class IIP_INSTALLATION:
         # totalAsciiBytes = self.numberofbytes - rec_len # we do not need to read the header twice
         self.txt = self.fileptr.read(self.numBytesCmnPart)# read the record from disc
         bytesread = bytesread + self.numBytesCmnPart
-        self.installationparameters = self.txt.decode('utf-8', errors="ignore")
+        self.installation = self.txt.decode('utf-8', errors="ignore")
+
+
+        self.installationparameters = {}
+        parameters = re.split('\n',self.installation)
+        for parameter in parameters:
+            if ":" in parameter:
+                words = re.split(':',parameter)
+                self.installationparameters[words[0].strip()] = words[1].strip()
+
         # parameters = re.split(';\n',parameters)
         # self.installationParameters = {}
         # # for p in parameters:

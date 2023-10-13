@@ -221,7 +221,7 @@ def reportsummary(myreport, KMALLBackscatterlogfilename):
 	myreport.addspace()
 	myreport.addtable(reportfilename)
 
-	myreport.addtitle("What is a Backscatter Calibration?")
+	myreport.addtitle("What is a Multibeam Backscatter?")
 	myreport.addspace()
 	myreport.addparagraph("Multibeam sonar systems are used for mapping the seafloor and underwater terrain by emitting multiple acoustic beams in a fan-like pattern and recording the backscattered signals that bounce back from the seafloor and submerged objects. The backscatter data provides information about the characteristics of the seafloor or underwater features, including the intensity and texture of the backscattered signals.")
 	myreport.addparagraph("Here's what multibeam backscatter data can reveal:")

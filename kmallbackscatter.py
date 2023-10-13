@@ -37,7 +37,7 @@ def main():
     parser.add_argument('-epsg',     action='store',         default="0",    dest='epsg',             help='Specify an output EPSG code for transforming from WGS84 to East,North,e.g. -epsg 4326')
     parser.add_argument('-i',         action='store',            default="",     dest='inputfolder',         help='Input filename/folder to process.')
     parser.add_argument('-odir',     action='store',         default="",    dest='odir',             help='Specify a relative output folder e.g. -odir GIS')
-    parser.add_argument('-debug',     action='store',         default="1000",    dest='debug',             help='Specify the number of pings to process.  good only for debugging. [Default:-1]')
+    parser.add_argument('-debug',     action='store',         default="10000000",    dest='debug',             help='Specify the number of pings to process.  good only for debugging. [Default:-1]')
 
     matches = []
     args = parser.parse_args()
@@ -175,9 +175,6 @@ def kmallbackscatter(filename, args):
     beamcountarray = 0
     results = []
     
-    log("Reading runtime parameters...")
-    runtime = kmall.getruntime(filename)
-
     log("Loading Backscatter...")
     processedanglebuckets, rawanglebuckets, report = kmall.loadbackscatterdata(filename, args)
     processedavg = np.array(processedanglebuckets)
@@ -186,15 +183,24 @@ def kmallbackscatter(filename, args):
         bs = np.mean(sectorRaw[:, 1])
         results.append([s,bs])
         log ("Sector, Backscatter: %s, %s" % (s, bs))
-        report["Sectornumber:%s" % (s)] = s
-        report["MeanBackscatterValue:%s" % (bs)] = bs
+        report["Sector_Number:%s" % (s)] = s
+        report["MeanBackscatter_Value:%s" % (bs)] = bs
 
+    log("Reading installation parameters...")
+    installation = kmall.getinstallation(filename)
+    if "TX" in installation:
+        report["Tx_Serial_Number"] = installation["TX"]
+    if "RX" in installation:
+        report["Rx_Serial_Number"] = installation["RX"]
+    log("Reading runtime parameters...")
+    runtime = kmall.getruntime(filename)
 
     # now plot the raw avg to a nice graph
     rawavg = np.array(rawanglebuckets)
     outfile = os.path.join(args.odir, os.path.basename(filename) + "_avg.txt")
     np.savetxt(outfile, rawavg, fmt='%.5f', delimiter=',')
 
+    plt.close('all')
     plt.figure().set_figwidth(10)
     plt.figure().set_figheight(10)
     plt.rcParams['figure.figsize'] = [8, 8]
